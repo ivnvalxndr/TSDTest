@@ -24,6 +24,14 @@
                 Clicked="OnCounterClicked"
                 HorizontalOptions="Center" />
 
+            <!--<Button
+                x:Name="Scan"
+                Text="Scan me"
+                SemanticProperties.Hint="Counts the number of times you click"
+                Clicked="ScanCallback"
+                HorizontalOptions="Center" />-->
+
+
         </VerticalStackLayout>
     </ScrollView>
 
