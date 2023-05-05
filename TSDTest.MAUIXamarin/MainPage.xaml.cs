@@ -18,8 +18,34 @@ namespace TSDTest.MAUIXamarin {
         private void TestNotify(string scanData) 
         {
             textScan.Text = scanData;
-            SaveToCSVFile(scanData);
+            //SaveToCSVFile(scanData);
+            SaveFileToExternalStorage(scanData);
         }
+
+
+        public async Task SaveFileToExternalStorage(string data)
+        {
+            var storageStatus = await Permissions.RequestAsync<Permissions.StorageWrite>();
+            if (storageStatus == PermissionStatus.Granted)
+            {
+                var file = Path.Combine(FileSystem.CacheDirectory, "data.txt");
+                var fileStream = new StreamWriter(file);
+                //fileStream.WriteLine(data);
+                await fileStream.WriteLineAsync(data.Replace(",", ";"));
+                fileStream.Close();
+
+                var externalStorage = FileSystem.AppDataDirectory;
+                var destination = Path.Combine(externalStorage, "data.txt");
+
+                File.Copy(file, destination, true);
+
+                await Launcher.OpenAsync(new OpenFileRequest
+                {
+                    File = new ReadOnlyFile(destination)
+                });
+            }
+        }
+
 
         // Метод который пишет в CsvFile
         //public static void SaveToCSVFile(string data)
