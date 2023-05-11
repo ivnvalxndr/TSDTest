@@ -7,6 +7,7 @@ namespace TSDTest.MAUIXamarin
     {
         int count = 0;
 
+        // Храним отсканированный ШК
         public static string Barcode { get; set; }
 
         private bool reWriteCode = false; // Перезапись ШК (Перезаписываем ШК)
@@ -68,9 +69,10 @@ namespace TSDTest.MAUIXamarin
             {
                 var scans = ReadScanLoop(); // получаем наши сканы (Десериализуем)
 
-                // Проверка на существующий ШК
+                // Нужно ли перезаписывать существущий ШК?
                 if (!reWriteCode)
                 {
+                    // Проверка на существующий ШК 
                     foreach (var item in scans)
                     {
                         if (item.Number == scanData)
