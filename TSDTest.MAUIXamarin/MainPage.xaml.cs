@@ -1,8 +1,5 @@
-﻿using System.Text;
-using System.Xml;
+﻿using Microsoft.Maui.Controls.PlatformConfiguration;
 using System.Xml.Serialization;
-using Microsoft.Maui.Controls.PlatformConfiguration;
-
 
 namespace TSDTest.MAUIXamarin
 {
@@ -10,7 +7,18 @@ namespace TSDTest.MAUIXamarin
     {
         int count = 0;
 
-        public string Scan;
+        public static string Barcode { get; set; }
+
+        private bool reWriteCode = false; // Перезапись ШК (Перезаписываем ШК)
+
+        // Путь корню внешнего хранилища
+        public static string externalStorageDirectoryPath = Android.OS.Environment.ExternalStorageDirectory.AbsolutePath;
+
+        // путь до созданной папки
+        public static string newDirectoryPath = Path.Combine(externalStorageDirectoryPath, "Scans");
+
+        // Путь до созданного файла
+        public static string filePath = Path.Combine(newDirectoryPath, "ScanData.xml");
 
         public MainPage()
         {
@@ -18,99 +26,124 @@ namespace TSDTest.MAUIXamarin
 
             ScanningTransmitterTest.Notify += TestNotify;
 
-            //Scan.SaveToXml("dada");
+            // Если папки Scans нет - то создаем
+            if (!Directory.Exists(newDirectoryPath))
+            {
+                Directory.CreateDirectory(newDirectoryPath);
+            }
         }
 
-        // Метод который выводит отсканированный ШК
+        // Метод в котором получаем ШК
         private void TestNotify(string scanData)
         {
-            textScan.Text = scanData;
+            textScan.Text = scanData; // Выводим надпись на экран ШК
 
-            if (scanData != "")
+            Barcode = scanData;
+
+            // Метод который начнет работать с XML
+            FromToXml(scanData);
+
+        }
+
+        // Метод для высплывающего окна
+        async void Alert()
+        {
+            bool result = await DisplayAlert("Подтвердить действие", $"Штрих-Код: {Barcode} уже был отсканирован\n Cохранить Штрих-Код?", "Да", "Нет");
+
+            await DisplayAlert("Уведомление", "Вы выбрали: " + (result ? "Сохранить ШК" : "Не сохранять"), "OK");
+
+            if (result)
             {
-                SaveToXml(scanData);
+                reWriteCode = true; // Свитч на то, что перезаписываем ШК
+                FromToXml(Barcode);
             }
         }
 
-        private void SaveToXml(string data)
-        { 
-            DateTime currentTime = DateTime.Now; // Текущее время
+        // Метод для формирования XML
+        private void FromToXml(string scanData)
+        {
+            bool fileExist = File.Exists(filePath);  // Проверка существует ли файл
 
-            string currtime = currentTime.ToString("yyyy-MM-dd hh:mm:ss.fff"); // Строка с форматом времени
-
-            if (Android.OS.Environment.ExternalStorageDirectory != null)
+            if (fileExist)
             {
-                string filePath = Path.Combine(Android.OS.Environment.ExternalStorageDirectory.AbsolutePath,
-                    "data.xml");
+                var scans = ReadScanLoop(); // получаем наши сканы (Десериализуем)
 
-                XmlWriterSettings settings = new XmlWriterSettings();
-                settings.Indent = true;
-
-                // Проверяем, что файл по указанному пути существует
-                if (!File.Exists(filePath))
+                // Проверка на существующий ШК
+                if (!reWriteCode)
                 {
-                    using (XmlWriter writer = XmlWriter.Create(filePath, settings))
+                    foreach (var item in scans)
                     {
-                        // начинаем запись XML-кода
-                        writer.WriteStartDocument();
-                        writer.WriteStartElement("XMLScaner");
-
-                        writer.WriteStartElement("scan");
-
-                        // Номер штрих Кода
-                        writer.WriteStartAttribute("number");
-                        writer.WriteString(data);
-                        writer.WriteEndAttribute();
-
-                        // Дата
-                        writer.WriteStartAttribute("date");
-                        writer.WriteString(currtime);
-                        writer.WriteEndAttribute();
-
-                        // заканчиваем запись XML-кода
-                        writer.WriteEndElement();
-                        writer.WriteEndElement();
-                        writer.WriteEndDocument();
-
+                        if (item.Number == scanData)
+                        {
+                            Alert();
+                            return;
+                        }
                     }
                 }
-                else
+
+                // Добавляем в нашу коллекцию новый скан
+                scans.Add(
+                            new Scan()
+                            {
+                                Number = scanData,
+                                CurrDate = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.fff")
+                            });
+
+                WriteScanLoop(scans); // Пишем XML
+            }
+            // Если файл не создан
+            else
+            {
+                var Scans = new List<Scan>
                 {
-                    XmlDocument xDoc = new XmlDocument();
-
-                    xDoc.Load(filePath);
-
-                    // создание нового элемента и добавление его к корневому элементу
-                    XmlElement xRoot = xDoc.DocumentElement;
-
-                    // создаем новый элемент
-                    // XmlElement newScanElem = xDoc.CreateElement("scan");
-
-                    // создаем новый элемент person
-                    XmlElement newScanElem = xDoc.CreateElement("scan");
-
-                    // создаем атрибут number
-                    XmlAttribute numberAttr = xDoc.CreateAttribute("number");
-                    //XmlAttribute dateAttr = xDoc.CreateAttribute("date");
-                    //XmlText dataText = xDoc.CreateTextNode(data);
-
-                    //numberAttr.AppendChild(dataText);
-
-                    newScanElem.Attributes.Append(numberAttr);
-                    //newScanElem.Attributes.Append(dateAttr);
-
-                    xRoot.AppendChild(newScanElem);
-                    //xDoc.AppendChild(newScanElem);#1#
-
-                    // xRoot.InsertAfter(newScanElem, );
-
-                    xDoc.AppendChild(xRoot);
-
-                    // сохранение изменений в файл
-                    xDoc.Save(filePath);
-                }
+                   new Scan()
+                   {
+                       Number = scanData,
+                       CurrDate = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.fff")
+                   }
+                };
+                WriteScanLoop(Scans);
             }
         }
+
+        // Запись данных в файл XML
+        private void WriteScanLoop(List<Scan> value)
+        {
+            XmlSerializer formatter = new XmlSerializer(typeof(List<Scan>));
+
+            // сохранение массива в файл
+            using (FileStream fs = new FileStream(filePath, FileMode.OpenOrCreate))
+            {
+                formatter.Serialize(fs, value);
+            }
+
+            reWriteCode = false; // Выключаем перезапись
+        }
+
+        // Чтение данных с файла XML (Если файл отсутствует, возвращаем пустой объект)
+        private List<Scan> ReadScanLoop()
+        {
+            XmlSerializer formatter = new XmlSerializer(typeof(List<Scan>));
+
+            bool fileExist = File.Exists(filePath);
+            if (fileExist)
+            {
+                var scaner = new List<Scan>();
+
+                using (FileStream fs = new FileStream(filePath, FileMode.OpenOrCreate))
+                {
+                    scaner = formatter.Deserialize(fs) as List<Scan>;
+                }
+
+                return scaner;
+            }
+
+            var scan = new List<Scan>();
+
+            return scan; // Возвращаем пустой объект, файл отсутствует
+        }
+
+
 
         private void OnCounterClicked(object sender, EventArgs e)
         {
