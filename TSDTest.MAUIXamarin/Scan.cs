@@ -1,42 +1,25 @@
-﻿using System.Text;
+﻿/*
 using System.Xml;
-using System.Xml.Serialization;
-using Microsoft.Maui.Controls.PlatformConfiguration;
-
 
 namespace TSDTest.MAUIXamarin
 {
-    public partial class MainPage : ContentPage
+    public static class Scan
     {
-        int count = 0;
+        public string Number { get; set; }
 
-        public string Scan;
+        public string CurrDate { get; set; }
 
-        public MainPage()
+        public Scan(string data)
         {
-            InitializeComponent();
-
-            ScanningTransmitterTest.Notify += TestNotify;
-
-            //Scan.SaveToXml("dada");
+            this.Number = data;
+            this.CurrDate = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.fff");
         }
 
-        // Метод который выводит отсканированный ШК
-        private void TestNotify(string scanData)
+        public void SaveToXml(string data)
         {
-            textScan.Text = scanData;
+           // DateTime currentTime = DateTime.Now; // Текущее время
 
-            if (scanData != "")
-            {
-                SaveToXml(scanData);
-            }
-        }
-
-        private void SaveToXml(string data)
-        { 
-            DateTime currentTime = DateTime.Now; // Текущее время
-
-            string currtime = currentTime.ToString("yyyy-MM-dd hh:mm:ss.fff"); // Строка с форматом времени
+           // string currtime = currentTime.ToString("yyyy-MM-dd hh:mm:ss.fff"); // Строка с форматом времени
 
             if (Android.OS.Environment.ExternalStorageDirectory != null)
             {
@@ -100,7 +83,7 @@ namespace TSDTest.MAUIXamarin
                     //newScanElem.Attributes.Append(dateAttr);
 
                     xRoot.AppendChild(newScanElem);
-                    //xDoc.AppendChild(newScanElem);#1#
+                    //xDoc.AppendChild(newScanElem);#2#
 
                     // xRoot.InsertAfter(newScanElem, );
 
@@ -111,18 +94,6 @@ namespace TSDTest.MAUIXamarin
                 }
             }
         }
-
-        private void OnCounterClicked(object sender, EventArgs e)
-        {
-            count++;
-
-            if (count == 1)
-                CounterBtn.Text = $"Clicked {count} time";
-            else
-                CounterBtn.Text = $"Clicked {count} times";
-
-            SemanticScreenReader.Announce(CounterBtn.Text);
-        }
     }
 }
-
+*/
